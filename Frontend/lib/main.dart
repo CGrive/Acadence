@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:frontend/pages/tab.dart';
 import 'package:frontend/theme_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sidebarx/sidebarx.dart';
 import 'package:flex_sidebar/flex_sidebar.dart';
 
 void main() {
@@ -17,7 +16,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// 👇🏻Not in use for now
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
