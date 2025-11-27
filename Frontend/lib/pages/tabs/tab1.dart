@@ -1,4 +1,5 @@
 import "package:flutter/material.dart";
+import 'package:frontend/theme_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../loginPage.dart';
 
@@ -21,6 +22,9 @@ class Tab1 extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 16.0),
             child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ApplicationColors.primaryBlue,
+              ),
               onPressed: () {
                 Navigator.push(
                   context,
@@ -32,6 +36,7 @@ class Tab1 extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   textStyle: TextStyle(
                     fontSize: 16,
+                    color: ApplicationColors.ivoryWhite,
                     fontWeight: FontWeight.w200,
                   ),
                 ),

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import "./tabs/tab1.dart";
 import "./tabs/tab2.dart";
 import "./tabs/tab3.dart";
+import "../theme_colors.dart";
 
 class TabHomePage extends StatelessWidget {
   const TabHomePage({super.key});
@@ -13,10 +14,12 @@ class TabHomePage extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           centerTitle: true,
+          backgroundColor: ApplicationColors.primaryBlue,
           title: Text(
             "Acadence - Home",
             style: GoogleFonts.poppins(
               textStyle: const TextStyle(
+                color: ApplicationColors.ivoryWhite,
                 fontSize: 20.0,
                 fontWeight: FontWeight.bold,
               ),
