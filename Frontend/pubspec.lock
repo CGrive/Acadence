@@ -113,6 +113,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
+  flex_sidebar:
+    dependency: "direct main"
+    description:
+      name: flex_sidebar
+      sha256: "2c9a23c9511127f84f95c818541e9e4dc5bc77bdd29f7eb27ddb11dbc156f914"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.2"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -352,6 +360,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.2.2"
+  sidebarx:
+    dependency: "direct main"
+    description:
+      name: sidebarx
+      sha256: "970cba4be128f217b0f714322203e6933fb3a12602fef0c39248f5800184068e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.17.2"
   sign_in_button:
     dependency: transitive
     description:
