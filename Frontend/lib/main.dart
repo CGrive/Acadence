@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/pages/navigation_rail.dart';
 import 'package:frontend/pages/tab.dart';
 import 'package:frontend/theme_colors.dart';
-import 'package:frontend/utils/alert_box.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:flex_sidebar/flex_sidebar.dart';
 
 void main() => runApp(const MyApp());
 
@@ -15,58 +13,60 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _selectedIndex = 0;
+  bool isRailExpanded = false;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Row(
         children: [
-          FlexSidebar(
-            controller: FlexSidebarController(resizeAnimCurve: Curves.linear),
-            theme: FlexThemeData(
-              normalWidth: 200,
-              normalDecoration: BoxDecoration(
-                color: ApplicationColors.primaryBlue,
-                borderRadius: BorderRadius.horizontal(),
-              ),
-              minimizedDecoration: BoxDecoration(
-                color: ApplicationColors.primaryBlue,
-                borderRadius: BorderRadius.horizontal(),
-              ),
-              scrollableItems: true,
-              itemsAlignment: MainAxisAlignment.start,
-            ),
-            primaryWidget: Icon(Icons.account_circle),
-            secondaryWidget: Text(
-              'User001',
-              style: GoogleFonts.poppins(
-                textStyle: TextStyle(fontWeight: FontWeight.w500),
-              ),
-            ),
-            items: [
-              FlexSidebarItem(
-                icon: Icon(Icons.accessibility_new_outlined),
-                label: Text('Accessibility'),
-                onTap: () {
-                  alertboxBuilder(context, whatsclicked: "Accessibility");
-                },
-              ),
-              FlexSidebarItem(
-                icon: Icon(Icons.settings),
-                label: Text('Settings'),
-                onTap: () {
-                  // alertboxBuilder(context, whatsclicked: "Settings");
-                  // dialogueBoxFullbox(context, whatsclicked: "Settings");
-                  simpleDialogue(context);
-                },
-              ),
-            ],
+          NavigationRailDrawer(
+            selectedIndex: _selectedIndex,
+            isExpanded: isRailExpanded,
+            onToggle: () {
+              setState(() {
+                isRailExpanded = !isRailExpanded;
+              });
+            },
+            onDestinationSelected: (index) {
+              setState(() {
+                _selectedIndex = index;
+              });
+            },
           ),
-          Expanded(child: TabHomePage()),
+          const VerticalDivider(
+            thickness: 2,
+            width: 2,
+            color: ApplicationColors.primaryBlue,
+          ),
+          Expanded(child: Center(child: _handleRails(_selectedIndex))),
         ],
       ),
     );
+  }
+
+  StatelessWidget _handleRails(int index) {
+    switch (index) {
+      case 0:
+        return TabHomePage();
+      case 1:
+        return Text("Selected Index 1");
+      case 2:
+        return Text("Selected Index 2");
+      case 3:
+        return Text("Selected Index 2");
+      default:
+        return Text(
+          "Nothing is selected; Make sure one of side rails are selected :)",
+        );
+    }
   }
 }

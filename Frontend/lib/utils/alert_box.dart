@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 
 Future<void> alertboxBuilder(BuildContext context, {String? whatsclicked}) {
   return showDialog<void>(
@@ -52,6 +51,7 @@ Future<void> dialogueBoxFullbox(BuildContext context, {String? whatsclicked}) {
 Future<void> simpleDialogue(BuildContext context, {String? whatsclicked}) {
   return showDialog(
     context: context,
+    useRootNavigator: true,
     builder: (BuildContext context) => SimpleDialog(
       title: const Text("You are viewing a simple dialogue"),
       children: <Widget>[

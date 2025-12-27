@@ -1,7 +1,7 @@
 import "package:flutter/material.dart";
 import 'package:frontend/theme_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../loginPage.dart';
+import '../../auth/login_page.dart';
 
 class Tab1 extends StatelessWidget {
   const Tab1({super.key});

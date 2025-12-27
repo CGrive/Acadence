@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_login/flutter_login.dart';
 
-const users = {'dribbble@gmail.com': '12345', 'hunter@gmail.com': 'hunter'};
+const users = {
+  'dribbble@gmail.com': '12345',
+  'hunter@gmail.com': 'hunter',
+  'test@test.com': 'test',
+};
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
