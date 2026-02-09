@@ -13,15 +13,16 @@ class RailDestination {
 const List<RailDestination> destinations = <RailDestination>[
   RailDestination('Home', Icon(Icons.home_outlined), Icon(Icons.home)),
   RailDestination(
-    'Profile',
+    'Student',
     Icon(Icons.account_circle_outlined),
     Icon(Icons.account_circle),
   ),
   RailDestination(
-    'Messages',
-    Icon(Icons.widgets_outlined),
-    Icon(Icons.widgets),
+    'Admin',
+    Icon(Icons.dashboard_outlined),
+    Icon(Icons.dashboard),
   ),
+  RailDestination("Faculty", Icon(Icons.android_outlined), Icon(Icons.android)),
   RailDestination(
     'Settings',
     Icon(Icons.settings_outlined),
