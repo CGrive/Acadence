@@ -14,29 +14,24 @@ class ExamNoticesPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Send Exam Notice",
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
+            const Text("Send Exam Notice",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
 
             _noticeForm(),
 
             const SizedBox(height: 32),
-
-            const Text(
-              "Notice History",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+            const Text("Notice History",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
 
             _noticeHistory(
-              title: "Question Paper Upload Deadline",
-              subtitle: "Sent to all faculty · 2h ago",
+              "Question Paper Upload Deadline",
+              "Sent to all faculty · 2h ago",
             ),
             _noticeHistory(
-              title: "Invigilation Assignment Reminder",
-              subtitle: "Sent to selected faculty · Yesterday",
+              "Invigilation Assignment Reminder",
+              "Sent to selected faculty · Yesterday",
             ),
           ],
         ),
@@ -82,10 +77,7 @@ class ExamNoticesPage extends StatelessWidget {
     );
   }
 
-  Widget _noticeHistory({
-    required String title,
-    required String subtitle,
-  }) {
+  Widget _noticeHistory(String title, String subtitle) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       title: Text(title),

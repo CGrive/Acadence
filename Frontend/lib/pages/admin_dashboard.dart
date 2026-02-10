@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/pages/subject_management.dart';
-import '../../theme_colors.dart';
+import '../theme_colors.dart';
+import 'package:frontend/state/app_state.dart';
+import 'package:frontend/models/enums.dart';
 
 class AdminDashboardTab extends StatelessWidget {
   const AdminDashboardTab({super.key});
@@ -27,8 +29,10 @@ class AdminDashboardTab extends StatelessWidget {
 
             const SizedBox(height: 24),
             _statsRow(),
+
             const SizedBox(height: 32),
             _recentSubmissionsTable(),
+
             const SizedBox(height: 20),
             Center(
               child: ElevatedButton(
@@ -40,8 +44,8 @@ class AdminDashboardTab extends StatelessWidget {
                     ),
                   );
                 },
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
+                child: const Padding(
+                  padding: EdgeInsets.all(8.0),
                   child: Text(
                     "Assign Subjects",
                     style: TextStyle(
@@ -58,6 +62,7 @@ class AdminDashboardTab extends StatelessWidget {
     );
   }
 
+  // ───────────────── Search Bar ─────────────────
   Widget _topSearchBar() {
     return TextField(
       decoration: InputDecoration(
@@ -73,20 +78,32 @@ class AdminDashboardTab extends StatelessWidget {
     );
   }
 
+  // ───────────────── Stats Row (CONNECTED) ─────────────────
   Widget _statsRow() {
+    final approvedCount = AppState.papers
+        .where((p) => p.status == PaperStatus.approved)
+        .length;
+
+    final totalPapers = AppState.papers.length;
+
     return Row(
-      children: const [
-        _StatCard("Total Departments", "12", Icons.apartment),
-        SizedBox(width: 16),
-        _StatCard("Active Subjects", "450", Icons.book),
-        SizedBox(width: 16),
-        _StatCard("Daily Lectures", "85", Icons.school),
-        SizedBox(width: 16),
-        _StatCard("Question Papers", "32 / 40", Icons.description),
+      children: [
+        const _StatCard("Total Departments", "12", Icons.apartment),
+        const SizedBox(width: 16),
+        const _StatCard("Active Subjects", "450", Icons.book),
+        const SizedBox(width: 16),
+        const _StatCard("Daily Lectures", "85", Icons.school),
+        const SizedBox(width: 16),
+        _StatCard(
+          "Question Papers",
+          "$approvedCount / $totalPapers",
+          Icons.description,
+        ),
       ],
     );
   }
 
+  // ───────────────── Recent Submissions Table (CONNECTED) ─────────────────
   Widget _recentSubmissionsTable() {
     return Center(
       child: Container(
@@ -105,42 +122,41 @@ class AdminDashboardTab extends StatelessWidget {
             DataColumn(label: Text("Date")),
             DataColumn(label: Text("Status")),
           ],
-          rows: const [
-            DataRow(
+          rows: AppState.papers.map((paper) {
+            return DataRow(
               cells: [
-                DataCell(Text("CS101 - Introduction to CS")),
-                DataCell(Text("Dr. Aris Thorne")),
-                DataCell(Text("Oct 24, 2024")),
+                DataCell(Text(paper.subject)),
+                DataCell(Text(paper.faculty)),
                 DataCell(
-                  Text("APPROVED", style: TextStyle(color: Colors.green)),
+                  Text(
+                    "${paper.date.day}/${paper.date.month}/${paper.date.year}",
+                  ),
                 ),
+                DataCell(_statusText(paper.status)),
               ],
-            ),
-            DataRow(
-              cells: [
-                DataCell(Text("MATH202 - Calculus II")),
-                DataCell(Text("Prof. Sarah Jenkins")),
-                DataCell(Text("Oct 23, 2024")),
-                DataCell(
-                  Text("PENDING", style: TextStyle(color: Colors.orange)),
-                ),
-              ],
-            ),
-            DataRow(
-              cells: [
-                DataCell(Text("LIT110 - World Classics")),
-                DataCell(Text("Prof. Elina Gilbert")),
-                DataCell(Text("Oct 21, 2024")),
-                DataCell(Text("REJECTED", style: TextStyle(color: Colors.red))),
-              ],
-            ),
-          ],
+            );
+          }).toList(),
         ),
       ),
     );
   }
+
+  // ───────────────── Status Text Helper ─────────────────
+  Widget _statusText(PaperStatus status) {
+    switch (status) {
+      case PaperStatus.approved:
+        return const Text("APPROVED", style: TextStyle(color: Colors.green));
+      case PaperStatus.pending:
+        return const Text("PENDING", style: TextStyle(color: Colors.orange));
+      case PaperStatus.rejected:
+        return const Text("REJECTED", style: TextStyle(color: Colors.red));
+      default:
+        return const Text("DRAFT", style: TextStyle(color: Colors.grey));
+    }
+  }
 }
 
+// ───────────────── Stat Card (UNCHANGED UI) ─────────────────
 class _StatCard extends StatelessWidget {
   final String title;
   final String value;

@@ -5,10 +5,16 @@ import 'package:frontend/theme_colors.dart';
 import 'package:frontend/pages/admin_dashboard.dart';
 import 'package:frontend/pages/student_dashboard.dart';
 import 'package:frontend/pages/faculty_dashboard.dart';
-// import 'package:frontend/pages/subject_management.dart';
 import 'package:frontend/pages/exam_department_shell.dart';
+import 'package:provider/provider.dart';
+import 'state/app_state.dart';
+import 'app.dart';
 
-void main() => runApp(const MyApp());
+void main() {
+  runApp(
+    ChangeNotifierProvider(create: (_) => AppState(), child: const MyApp()),
+  );
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -68,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return const AdminDashboardTab();
       case 3:
         return const FacultyDashboardTab();
-      case 4:       
+      case 4:
         return const ExamDepartmentShell();
       default:
         return Text(

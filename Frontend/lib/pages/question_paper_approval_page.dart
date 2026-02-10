@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import '../theme_colors.dart';
+import 'package:frontend/state/app_state.dart';
+import 'package:frontend/models/enums.dart';
 
 class PaperApprovalPage extends StatelessWidget {
   const PaperApprovalPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final pendingPapers = context.watch<AppState>().pendingPapers;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC),
       appBar: AppBar(
@@ -27,33 +33,32 @@ class PaperApprovalPage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            _paperCard(
-              context,
-              subject: "CS401 – Advanced AI",
-              faculty: "Dr. Alan Turing",
-              date: "24 OCT",
-            ),
-            _paperCard(
-              context,
-              subject: "CS302 – OS Design",
-              faculty: "Prof. Grace Hopper",
-              date: "25 OCT",
-            ),
+            if (pendingPapers.isEmpty)
+              const Text(
+                "No pending papers 🎉",
+                style: TextStyle(color: Colors.grey),
+              ),
+
+            for (final paper in pendingPapers)
+              _PaperCard(paper: paper),
 
             const SizedBox(height: 28),
-            _reviewChecklist(),
+            const _ReviewChecklist(),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _paperCard(
-    BuildContext context, {
-    required String subject,
-    required String faculty,
-    required String date,
-  }) {
+/* ───────────────── PAPER CARD ───────────────── */
+
+class _PaperCard extends StatelessWidget {
+  final Paper paper;
+  const _PaperCard({required this.paper});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(20),
@@ -73,10 +78,14 @@ class PaperApprovalPage extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(subject,
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
-                  Text(faculty,
-                      style: const TextStyle(color: Colors.grey)),
+                  Text(
+                    paper.subject,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  Text(
+                    paper.faculty,
+                    style: const TextStyle(color: Colors.grey),
+                  ),
                 ],
               ),
               Container(
@@ -86,7 +95,9 @@ class PaperApprovalPage extends StatelessWidget {
                   color: Colors.blue.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text(date),
+                child: Text(
+                  "${paper.date.day}/${paper.date.month}",
+                ),
               ),
             ],
           ),
@@ -96,7 +107,9 @@ class PaperApprovalPage extends StatelessWidget {
           OutlinedButton.icon(
             icon: const Icon(Icons.remove_red_eye),
             label: const Text("View Paper"),
-            onPressed: () {},
+            onPressed: () {
+              // later: open PDF from backend / storage
+            },
           ),
 
           const SizedBox(height: 16),
@@ -109,7 +122,13 @@ class PaperApprovalPage extends StatelessWidget {
                     backgroundColor: Colors.green.withOpacity(0.15),
                     foregroundColor: Colors.green,
                   ),
-                  onPressed: () {},
+                  onPressed: () {
+                    context.read<AppState>().approvePaper(paper);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Paper Approved")),
+                    );
+                  },
                   child: const Text("Approve"),
                 ),
               ),
@@ -120,7 +139,13 @@ class PaperApprovalPage extends StatelessWidget {
                     backgroundColor: Colors.red.withOpacity(0.15),
                     foregroundColor: Colors.red,
                   ),
-                  onPressed: () {},
+                  onPressed: () {
+                    context.read<AppState>().rejectPaper(paper);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Paper Rejected")),
+                    );
+                  },
                   child: const Text("Reject"),
                 ),
               ),
@@ -130,17 +155,24 @@ class PaperApprovalPage extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _reviewChecklist() {
+/* ───────────────── REVIEW CHECKLIST ───────────────── */
+
+class _ReviewChecklist extends StatelessWidget {
+  const _ReviewChecklist();
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
+        children: [
           Text(
             "Review Checklist",
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),

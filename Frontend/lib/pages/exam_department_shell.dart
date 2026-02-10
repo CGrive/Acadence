@@ -31,9 +31,7 @@ class _ExamDepartmentShellState extends State<ExamDepartmentShell> {
         selectedItemColor: ApplicationColors.primaryBlue,
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
-        onTap: (index) {
-          setState(() => _currentIndex = index);
-        },
+        onTap: (index) => setState(() => _currentIndex = index),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard),

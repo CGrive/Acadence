@@ -14,41 +14,23 @@ class InvigilationPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Invigilation Allocation",
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
+            const Text("Invigilation Allocation",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
-            const Text(
-              "Assign faculty members for upcoming exams.",
-              style: TextStyle(color: Colors.grey),
-            ),
+            const Text("Assign faculty members for upcoming exams.",
+                style: TextStyle(color: Colors.grey)),
             const SizedBox(height: 24),
 
-            _invigilationCard(
-              subject: "Data Structures",
-              time: "01:00 PM",
-              room: "Main Lab",
-              assigned: false,
-            ),
-            _invigilationCard(
-              subject: "Networking",
-              time: "03:00 PM",
-              room: "Room 405",
-              assigned: true,
-            ),
+            _invigilationCard("Data Structures", "01:00 PM", "Main Lab", false),
+            _invigilationCard("Networking", "03:00 PM", "Room 405", true),
           ],
         ),
       ),
     );
   }
 
-  Widget _invigilationCard({
-    required String subject,
-    required String time,
-    required String room,
-    required bool assigned,
-  }) {
+  Widget _invigilationCard(
+      String subject, String time, String room, bool assigned) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
@@ -74,11 +56,9 @@ class InvigilationPage extends StatelessWidget {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: assigned
-                  ? Colors.green.withOpacity(0.15)
-                  : ApplicationColors.primaryBlue,
-              foregroundColor:
-                  assigned ? Colors.green : Colors.white,
+              backgroundColor:
+                  assigned ? Colors.green.withOpacity(0.15) : ApplicationColors.primaryBlue,
+              foregroundColor: assigned ? Colors.green : Colors.white,
             ),
             onPressed: () {},
             child: Text(assigned ? "Assigned" : "Allocate"),

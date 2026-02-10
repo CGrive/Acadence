@@ -1,8 +1,36 @@
 import 'package:flutter/material.dart';
-import '../../theme_colors.dart';
+import 'package:flutter/foundation.dart'; // kIsWeb
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 
-class QuestionPaperUploadPage extends StatelessWidget {
+import 'package:file_picker/file_picker.dart';
+import 'dart:math';
+
+import '../theme_colors.dart';
+import 'package:frontend/state/app_state.dart';
+import 'package:frontend/models/enums.dart';
+
+class QuestionPaperUploadPage extends StatefulWidget {
   const QuestionPaperUploadPage({super.key});
+
+  @override
+  State<QuestionPaperUploadPage> createState() =>
+      _QuestionPaperUploadPageState();
+}
+
+class _QuestionPaperUploadPageState extends State<QuestionPaperUploadPage> {
+  String? selectedSubject;
+  String? selectedExamType;
+  PlatformFile? selectedFile;
+
+  final List<String> subjects = [
+    "Advanced Algorithms",
+    "Operating Systems",
+    "Database Management",
+    "Computer Networks",
+  ];
+
+  final List<String> examTypes = ["Midterm", "End Semester"];
 
   @override
   Widget build(BuildContext context) {
@@ -36,31 +64,7 @@ class QuestionPaperUploadPage extends StatelessWidget {
     );
   }
 
-  Widget _deadlineBanner() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: const [
-          Icon(Icons.warning_amber, color: Colors.red),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              "Deadline Remaining: 02 Days 14 Hours",
-              style: TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
+  // ───────── Upload Form ─────────
   Widget _uploadForm() {
     return _card(
       child: Column(
@@ -72,9 +76,25 @@ class QuestionPaperUploadPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          _dropdown("Select Subject"),
+          DropdownButtonFormField<String>(
+            value: selectedSubject,
+            decoration: _inputDecoration("Select Subject"),
+            items: subjects
+                .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                .toList(),
+            onChanged: (value) => setState(() => selectedSubject = value),
+          ),
+
           const SizedBox(height: 12),
-          _dropdown("Select Exam Type"),
+
+          DropdownButtonFormField<String>(
+            value: selectedExamType,
+            decoration: _inputDecoration("Select Exam Type"),
+            items: examTypes
+                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                .toList(),
+            onChanged: (value) => setState(() => selectedExamType = value),
+          ),
 
           const SizedBox(height: 16),
           _fileUploadBox(),
@@ -90,7 +110,7 @@ class QuestionPaperUploadPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              onPressed: () {},
+              onPressed: _submitPaper,
               child: const Text("Upload for Approval"),
             ),
           ),
@@ -99,90 +119,193 @@ class QuestionPaperUploadPage extends StatelessWidget {
     );
   }
 
+  // ───────── File Picker ─────────
   Widget _fileUploadBox() {
-    return Container(
-      height: 140,
-      decoration: BoxDecoration(
-        color: const Color(0xFFF4F6FA),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.cloud_upload_outlined, size: 40, color: Colors.grey),
-            SizedBox(height: 8),
-            Text("Tap to browse or drop file"),
-          ],
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: _pickFile,
+      child: Container(
+        height: 140,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF4F6FA),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selectedFile == null
+                ? Colors.grey.shade300
+                : ApplicationColors.primaryBlue,
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                selectedFile == null
+                    ? Icons.cloud_upload_outlined
+                    : Icons.insert_drive_file,
+                size: 40,
+                color: selectedFile == null
+                    ? Colors.grey
+                    : ApplicationColors.primaryBlue,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                selectedFile == null
+                    ? "Tap to browse or drop file"
+                    : selectedFile!.name,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
+  Future<void> _pickFile() async {
+    if (kIsWeb) {
+      final input = html.FileUploadInputElement()..accept = '.pdf,.doc,.docx';
+      input.click();
+
+      input.onChange.listen((_) {
+        final file = input.files?.first;
+        if (file != null) {
+          setState(() {
+            selectedFile = PlatformFile(name: file.name, size: file.size);
+          });
+        }
+      });
+      return;
+    }
+
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx'],
+    );
+
+    if (result != null && result.files.isNotEmpty) {
+      setState(() => selectedFile = result.files.first);
+    }
+  }
+
+  // ───────── Submit ─────────
+  void _submitPaper() {
+    if (selectedSubject == null ||
+        selectedExamType == null ||
+        selectedFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please complete all fields")),
+      );
+      return;
+    }
+
+    final paper = Paper(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      subject: selectedSubject!,
+      faculty: "Faculty User",
+      date: DateTime.now(),
+      status: PaperStatus.pending,
+    );
+
+    context.read<AppState>().submitPaper(paper);
+
+    setState(() {
+      selectedSubject = null;
+      selectedExamType = null;
+      selectedFile = null;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Paper submitted for approval")),
+    );
+  }
+
+  // ───────── Submission History ─────────
   Widget _submissionHistory() {
+    final myPapers = AppState.papers
+        .where((p) => p.faculty == "Faculty User")
+        .toList();
+
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text(
+        children: [
+          const Text(
             "Submission History",
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 16),
-          _HistoryRow(
-            subject: "Advanced Algorithms",
-            status: "Approved",
-            color: Colors.green,
-          ),
-          _HistoryRow(
-            subject: "Operating Systems",
-            status: "Pending",
-            color: Colors.orange,
-          ),
-          _HistoryRow(
-            subject: "Database Mgmt.",
-            status: "Revision Required",
-            color: Colors.red,
-          ),
+          const SizedBox(height: 16),
+          if (myPapers.isEmpty)
+            const Text(
+              "No submissions yet",
+              style: TextStyle(color: Colors.grey),
+            ),
+          for (final paper in myPapers)
+            _HistoryRow(
+              subject: paper.subject,
+              status: paper.status.name.toUpperCase(),
+              color: _statusColor(paper.status),
+            ),
         ],
       ),
     );
   }
 
-  Widget _dropdown(String hint) {
-    return DropdownButtonFormField(
-      decoration: _inputDecoration(hint),
-      items: const [],
-      onChanged: (_) {},
-    );
+  Color _statusColor(PaperStatus status) {
+    switch (status) {
+      case PaperStatus.approved:
+        return Colors.green;
+      case PaperStatus.pending:
+        return Colors.orange;
+      case PaperStatus.rejected:
+        return Colors.red;
+      case PaperStatus.draft:
+        return Colors.grey;
+    }
   }
 
-  InputDecoration _inputDecoration(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: const Color(0xFFF4F6FA),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-    );
-  }
+  // ───────── UI helpers ─────────
+  Widget _deadlineBanner() => Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.red.withOpacity(0.08),
+      borderRadius: BorderRadius.circular(14),
+    ),
+    child: const Row(
+      children: [
+        Icon(Icons.warning_amber, color: Colors.red),
+        SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            "Deadline Remaining: 02 Days 14 Hours",
+            style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
+    ),
+  );
 
-  Widget _card({required Widget child}) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 12),
-        ],
-      ),
-      child: child,
-    );
-  }
+  InputDecoration _inputDecoration(String hint) => InputDecoration(
+    hintText: hint,
+    filled: true,
+    fillColor: const Color(0xFFF4F6FA),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide.none,
+    ),
+  );
+
+  Widget _card({required Widget child}) => Container(
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 12),
+      ],
+    ),
+    child: child,
+  );
 }
 
 class _HistoryRow extends StatelessWidget {
