@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme_colors.dart';
 import 'package:frontend/pages/lecture_monitoring.dart';
+import 'package:frontend/pages/question_paper_upload_page.dart';
 
 class FacultyDashboardTab extends StatelessWidget {
   const FacultyDashboardTab({super.key});
@@ -128,7 +129,7 @@ class FacultyDashboardTab extends StatelessWidget {
             _gradingQueue(),
             const SizedBox(height: 24),
 
-            _questionPaperSubmission(),
+            _questionPaperSubmission(context),
             const SizedBox(height: 24),
 
             _quickStudentNotice(),
@@ -227,15 +228,39 @@ class FacultyDashboardTab extends StatelessWidget {
   }
 
   // ───────────────── Question Paper Submission ─────────────────
-  Widget _questionPaperSubmission() {
+  Widget _questionPaperSubmission(BuildContext context) {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Question Paper Submission",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Question Paper Submission",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  "Action Required",
+                  style: TextStyle(
+                    color: Colors.orange,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
+
           const SizedBox(height: 16),
 
           Row(
@@ -247,11 +272,12 @@ class FacultyDashboardTab extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Software Engineering - Sem Final",
+                      "Software Engineering – Sem Final",
                       style: TextStyle(fontWeight: FontWeight.w600),
                     ),
+                    SizedBox(height: 4),
                     Text(
-                      "Draft saved 2h ago",
+                      "Draft saved · Awaiting upload",
                       style: TextStyle(color: Colors.grey),
                     ),
                   ],
@@ -261,16 +287,41 @@ class FacultyDashboardTab extends StatelessWidget {
           ),
 
           const SizedBox(height: 20),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1F2A3A),
-              minimumSize: const Size.fromHeight(48),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+
+          // 🔥 Primary CTA
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.cloud_upload_outlined),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ApplicationColors.primaryBlue,
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const QuestionPaperUploadPage(),
+                  ),
+                );
+              },
+              label: const Text(
+                "Upload Question Paper",
+                style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
-            onPressed: () {},
-            child: const Text("Submit for Approval"),
+          ),
+
+          const SizedBox(height: 8),
+
+          Center(
+            child: Text(
+              "Deadline managed by Exam Department",
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
           ),
         ],
       ),

@@ -23,6 +23,12 @@ const List<RailDestination> destinations = <RailDestination>[
     Icon(Icons.dashboard),
   ),
   RailDestination("Faculty", Icon(Icons.android_outlined), Icon(Icons.android)),
+  
+  RailDestination(
+    'Exam Department',
+    Icon(Icons.assessment_outlined),
+    Icon(Icons.assessment),
+  ),
   RailDestination(
     'Settings',
     Icon(Icons.settings_outlined),
