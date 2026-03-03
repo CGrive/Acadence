@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../theme_colors.dart';
 import 'package:frontend/state/app_state.dart';
-import 'package:frontend/models/enums.dart';
 
 class PaperApprovalPage extends StatelessWidget {
   const PaperApprovalPage({super.key});
@@ -39,8 +37,7 @@ class PaperApprovalPage extends StatelessWidget {
                 style: TextStyle(color: Colors.grey),
               ),
 
-            for (final paper in pendingPapers)
-              _PaperCard(paper: paper),
+            for (final paper in pendingPapers) _PaperCard(paper: paper),
 
             const SizedBox(height: 28),
             const _ReviewChecklist(),
@@ -89,15 +86,15 @@ class _PaperCard extends StatelessWidget {
                 ],
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.blue.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text(
-                  "${paper.date.day}/${paper.date.month}",
-                ),
+                child: Text("${paper.date.day}/${paper.date.month}"),
               ),
             ],
           ),

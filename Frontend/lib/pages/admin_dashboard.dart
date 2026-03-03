@@ -3,6 +3,7 @@ import 'package:frontend/pages/subject_management.dart';
 import '../theme_colors.dart';
 import 'package:frontend/state/app_state.dart';
 import 'package:frontend/models/enums.dart';
+import 'package:provider/provider.dart';
 
 class AdminDashboardTab extends StatelessWidget {
   const AdminDashboardTab({super.key});
@@ -28,10 +29,10 @@ class AdminDashboardTab extends StatelessWidget {
             ),
 
             const SizedBox(height: 24),
-            _statsRow(),
+            _statsRow(context),
 
             const SizedBox(height: 32),
-            _recentSubmissionsTable(),
+            _recentSubmissionsTable(context),
 
             const SizedBox(height: 20),
             Center(
@@ -79,12 +80,14 @@ class AdminDashboardTab extends StatelessWidget {
   }
 
   // ───────────────── Stats Row (CONNECTED) ─────────────────
-  Widget _statsRow() {
-    final approvedCount = AppState.papers
+  Widget _statsRow(BuildContext context) {
+    final appState = context.watch<AppState>();
+
+    final approvedCount = appState.papers
         .where((p) => p.status == PaperStatus.approved)
         .length;
 
-    final totalPapers = AppState.papers.length;
+    final totalPapers = appState.papers.length;
 
     return Row(
       children: [
@@ -104,7 +107,9 @@ class AdminDashboardTab extends StatelessWidget {
   }
 
   // ───────────────── Recent Submissions Table (CONNECTED) ─────────────────
-  Widget _recentSubmissionsTable() {
+  Widget _recentSubmissionsTable(BuildContext context) {
+    final appState = context.watch<AppState>();
+
     return Center(
       child: Container(
         padding: const EdgeInsets.all(20),
@@ -122,7 +127,7 @@ class AdminDashboardTab extends StatelessWidget {
             DataColumn(label: Text("Date")),
             DataColumn(label: Text("Status")),
           ],
-          rows: AppState.papers.map((paper) {
+          rows: appState.papers.map((paper) {
             return DataRow(
               cells: [
                 DataCell(Text(paper.subject)),

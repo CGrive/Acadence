@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // kIsWeb
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
 
 import 'package:file_picker/file_picker.dart';
-import 'dart:math';
 
 import '../theme_colors.dart';
 import 'package:frontend/state/app_state.dart';
 import 'package:frontend/models/enums.dart';
+import 'package:provider/provider.dart';
 
 class QuestionPaperUploadPage extends StatefulWidget {
   const QuestionPaperUploadPage({super.key});
@@ -163,21 +160,6 @@ class _QuestionPaperUploadPageState extends State<QuestionPaperUploadPage> {
   }
 
   Future<void> _pickFile() async {
-    if (kIsWeb) {
-      final input = html.FileUploadInputElement()..accept = '.pdf,.doc,.docx';
-      input.click();
-
-      input.onChange.listen((_) {
-        final file = input.files?.first;
-        if (file != null) {
-          setState(() {
-            selectedFile = PlatformFile(name: file.name, size: file.size);
-          });
-        }
-      });
-      return;
-    }
-
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'doc', 'docx'],
@@ -222,7 +204,9 @@ class _QuestionPaperUploadPageState extends State<QuestionPaperUploadPage> {
 
   // ───────── Submission History ─────────
   Widget _submissionHistory() {
-    final myPapers = AppState.papers
+    final appState = context.watch<AppState>();
+
+    final myPapers = appState.papers
         .where((p) => p.faculty == "Faculty User")
         .toList();
 

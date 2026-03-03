@@ -8,7 +8,6 @@ import 'package:frontend/pages/faculty_dashboard.dart';
 import 'package:frontend/pages/exam_department_shell.dart';
 import 'package:provider/provider.dart';
 import 'state/app_state.dart';
-import 'app.dart';
 
 void main() {
   runApp(
