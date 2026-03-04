@@ -2,3 +2,6 @@
 .ruff_cache/ 
 .venv/ 
 venv312/
+.env
+*.pyc
+__pycache__/
