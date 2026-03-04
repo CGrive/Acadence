@@ -14,6 +14,7 @@ class ExamDepartmentDashboard extends StatefulWidget {
 class _ExamDepartmentDashboardState extends State<ExamDepartmentDashboard> {
   List<dynamic> _pendingPapers = [];
   List<dynamic> _invigilation = [];
+  List<dynamic> _recentNotices = [];
   bool _loading = true;
   String? _error;
 
@@ -28,10 +29,14 @@ class _ExamDepartmentDashboardState extends State<ExamDepartmentDashboard> {
     try {
       final pendingResp = await api.get('/exam/pending-papers');
       final invigResp = await api.get('/exam/invigilation');
+      final noticesResp = await api.get('/exam/notices?limit=2');
       if (pendingResp.statusCode == 200 && invigResp.statusCode == 200) {
         setState(() {
           _pendingPapers = jsonDecode(pendingResp.body);
           _invigilation = jsonDecode(invigResp.body);
+          if (noticesResp.statusCode == 200) {
+            _recentNotices = jsonDecode(noticesResp.body);
+          }
           _loading = false;
         });
       } else {
@@ -48,8 +53,13 @@ class _ExamDepartmentDashboardState extends State<ExamDepartmentDashboard> {
     }
   }
 
+  Future<void> _refresh() async {
+    await _fetchData();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context);
     if (_loading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -73,23 +83,29 @@ class _ExamDepartmentDashboardState extends State<ExamDepartmentDashboard> {
           SizedBox(width: 12),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("Dashboard Overview",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 6),
-            const Text("Semester Finals · Operational Summary",
-                style: TextStyle(color: Colors.grey)),
-            const SizedBox(height: 20),
-            _kpiRow(),
-            const SizedBox(height: 28),
-            _urgentFacultyNotifications(),
-            const SizedBox(height: 28),
-            _invigilationOverview(),
-          ],
+      body: RefreshIndicator(
+        onRefresh: _refresh,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Welcome, ${auth.name ?? 'Exam Officer'}",
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              const Text("Semester Finals · Operational Summary",
+                  style: TextStyle(color: Colors.grey)),
+              const SizedBox(height: 20),
+              _kpiRow(),
+              const SizedBox(height: 28),
+              _recentNoticesCard(),
+              const SizedBox(height: 28),
+              _invigilationOverview(),
+            ],
+          ),
         ),
       ),
     );
@@ -98,31 +114,33 @@ class _ExamDepartmentDashboardState extends State<ExamDepartmentDashboard> {
   Widget _kpiRow() {
     final pendingCount = _pendingPapers.length;
     final invigilationGaps = _invigilation.where((i) => i['status'] == 'unassigned').length;
-    final totalPapers = _pendingPapers.length; // placeholder
     return Row(
       children: [
         _MiniKpiCard("Pending Approvals", pendingCount.toString(), Colors.orange),
         const SizedBox(width: 12),
         _MiniKpiCard("Invigilation Gaps", invigilationGaps.toString(), Colors.red),
         const SizedBox(width: 12),
-        _MiniKpiCard("Papers Uploaded", totalPapers.toString(), Colors.green),
+        _MiniKpiCard("Papers Uploaded", pendingCount.toString(), Colors.green),
         const SizedBox(width: 12),
-        _MiniKpiCard("Active Exams", "25", Colors.blue), // static for now
+        _MiniKpiCard("Active Exams", "25", Colors.blue),
       ],
     );
   }
 
-  Widget _urgentFacultyNotifications() {
+  Widget _recentNoticesCard() {
+    if (_recentNotices.isEmpty) return const SizedBox.shrink();
     return _card(
       Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text("Urgent: Faculty Notifications",
+        children: [
+          const Text("Recent Notices",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          SizedBox(height: 16),
-          _FacultyRow("Dr. Robert Arnold", "CS401 · AI", "4h remaining", true),
-          _FacultyRow(
-              "Prof. Sarah Mitchell", "EC302 · Digital Logic", "12h remaining", false),
+          const SizedBox(height: 16),
+          ..._recentNotices.map((n) => ListTile(
+                leading: const Icon(Icons.notifications_active, color: ApplicationColors.primaryPurple),
+                title: Text(n['title'] ?? 'No title'),
+                subtitle: Text(n['content'] ?? ''),
+              )).toList(),
         ],
       ),
     );
@@ -136,12 +154,15 @@ class _ExamDepartmentDashboardState extends State<ExamDepartmentDashboard> {
           const Text("Invigilation Overview",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
-          ..._invigilation.map((i) => _InvigilationRow(
-                i['subject'] ?? 'Unknown',
-                i['start_time']?.toString() ?? '00:00',
-                i['room'] ?? 'Room?',
-                i['status'] == 'assigned',
-              )).toList(),
+          if (_invigilation.isEmpty)
+            const Center(child: Text("No invigilation duties scheduled."))
+          else
+            ..._invigilation.map((i) => _InvigilationRow(
+                  i['exam_name'] ?? i['subject'] ?? 'Exam',
+                  i['start_time']?.toString() ?? '00:00',
+                  i['room'] ?? 'Room?',
+                  i['status'] == 'assigned',
+                )).toList(),
         ],
       ),
     );
@@ -161,8 +182,6 @@ class _ExamDepartmentDashboardState extends State<ExamDepartmentDashboard> {
     );
   }
 }
-
-// Helper widgets – top-level
 
 class _MiniKpiCard extends StatelessWidget {
   final String title;
@@ -191,58 +210,6 @@ class _MiniKpiCard extends StatelessWidget {
                 style: const TextStyle(fontSize: 11, color: Colors.grey)),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _FacultyRow extends StatelessWidget {
-  final String name;
-  final String subject;
-  final String remaining;
-  final bool urgent;
-
-  const _FacultyRow(this.name, this.subject, this.remaining, this.urgent);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor:
-                urgent ? Colors.red.withOpacity(0.2) : Colors.blue.withOpacity(0.2),
-            child: Text(name[0]),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                Text(subject, style: const TextStyle(color: Colors.grey)),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(remaining,
-                  style: TextStyle(
-                      fontSize: 12, color: urgent ? Colors.red : Colors.orange)),
-              const SizedBox(height: 6),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ApplicationColors.primaryBlue,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                ),
-                onPressed: () {},
-                child: const Text("Send Reminder"),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

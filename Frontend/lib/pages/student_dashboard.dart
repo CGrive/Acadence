@@ -1,15 +1,92 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../theme_colors.dart';
+import '../providers/auth_provider.dart';
 
-class StudentDashboardTab extends StatelessWidget {
+class StudentDashboardTab extends StatefulWidget {
   const StudentDashboardTab({super.key});
 
   @override
+  State<StudentDashboardTab> createState() => _StudentDashboardTabState();
+}
+
+class _StudentDashboardTabState extends State<StudentDashboardTab> {
+  Map<String, dynamic> _dashboardData = {};
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    final api = context.read<AuthProvider>().apiService;
+    try {
+      final response = await api.get('/student/dashboard');
+      if (response.statusCode == 200) {
+        setState(() {
+          _dashboardData = jsonDecode(response.body);
+          _loading = false;
+        });
+      } else {
+        setState(() {
+          _error = 'Failed to load data';
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _refresh() async {
+    await _fetchData();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_error != null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('Error: $_error'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _refresh,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final lectures = _dashboardData['today_lectures'] ?? [];
+    final exams = _dashboardData['upcoming_exams'] ?? [];
+    final progress = _dashboardData['syllabus_progress'] ?? 0;
+    final attendance = _dashboardData['attendance'] ?? 0.0;
+    final notices = _dashboardData['notices'] ?? [];
+
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Padding(
-        padding: const EdgeInsets.all(24),
+      body: RefreshIndicator(
+        onRefresh: _refresh,
         child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -21,21 +98,21 @@ class StudentDashboardTab extends StatelessWidget {
                 style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 6),
-              const Text(
-                "Welcome back, let’s track your academic progress.",
-                style: TextStyle(color: Colors.grey),
+              Text(
+                "Welcome back, ${context.watch<AuthProvider>().name ?? 'Student'}",
+                style: const TextStyle(color: Colors.grey),
               ),
 
               const SizedBox(height: 24),
-              _statsRow(),
+              _statsRow(lectures.length, exams.length, progress, attendance),
               const SizedBox(height: 32),
 
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(child: _upcomingLectures()),
+                  Expanded(child: _upcomingLectures(lectures)),
                   const SizedBox(width: 24),
-                  SizedBox(width: 320, child: _academicNotices()),
+                  SizedBox(width: 320, child: _academicNotices(notices)),
                 ],
               ),
             ],
@@ -45,7 +122,6 @@ class StudentDashboardTab extends StatelessWidget {
     );
   }
 
-  // 🔍 Top Bar
   Widget _topBar() {
     return Row(
       children: [
@@ -66,76 +142,67 @@ class StudentDashboardTab extends StatelessWidget {
         const SizedBox(width: 16),
         const Icon(Icons.notifications_none),
         const SizedBox(width: 16),
-        const CircleAvatar(
-          backgroundColor: Color(0xFF97A5C9),
-          child: Icon(Icons.person, color: Colors.white),
+        CircleAvatar(
+          backgroundColor: ApplicationColors.primaryPurple,
+          child: const Icon(Icons.person, color: Colors.white),
         ),
       ],
     );
   }
 
-  // 📊 KPI Cards
-  Widget _statsRow() {
+  Widget _statsRow(int lectureCount, int examCount, int progress, double attendance) {
     return Row(
-      children: const [
+      children: [
         _StatCard(
           title: "Today’s Lectures",
-          value: "4",
-          subtitle: "Next: 10:30 AM",
+          value: lectureCount.toString(),
+          subtitle: lectureCount > 0 ? "Check schedule" : "No lectures",
           icon: Icons.calendar_today,
         ),
-        SizedBox(width: 16),
+        const SizedBox(width: 16),
         _StatCard(
           title: "Upcoming Exams",
-          value: "02",
-          subtitle: "Applied Calculus – Nov 5",
+          value: examCount.toString(),
+          subtitle: examCount > 0 ? "Prepare well" : "No exams",
           icon: Icons.assignment,
         ),
-        SizedBox(width: 16),
+        const SizedBox(width: 16),
         _StatCard(
           title: "Syllabus Progress",
-          value: "72%",
-          subtitle: "Active",
+          value: "$progress%",
+          subtitle: "Keep going",
           icon: Icons.check_circle,
         ),
-        SizedBox(width: 16),
+        const SizedBox(width: 16),
         _StatCard(
           title: "Attendance",
-          value: "88.5%",
-          subtitle: "Target 75%",
+          value: "${attendance.toStringAsFixed(1)}%",
+          subtitle: attendance >= 75 ? "Good" : "Needs attention",
           icon: Icons.bar_chart,
         ),
       ],
     );
   }
 
-  // 📅 Upcoming Lectures
-  Widget _upcomingLectures() {
+  Widget _upcomingLectures(List<dynamic> lectures) {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionHeader("Upcoming Lectures", "View Weekly Schedule"),
+          _sectionHeader("Today's Lectures", "View All"),
           const SizedBox(height: 16),
-
-          _lectureRow(
-            subject: "Data Structures",
-            faculty: "Dr. Emily Watson",
-            time: "10:30 AM",
-            mode: "Physical",
-          ),
-          _lectureRow(
-            subject: "Applied Calculus",
-            faculty: "Prof. Mark Stevens",
-            time: "01:00 PM",
-            mode: "Online",
-          ),
-          _lectureRow(
-            subject: "Cloud Computing",
-            faculty: "Dr. Sophia Lin",
-            time: "03:30 PM",
-            mode: "Physical",
-          ),
+          if (lectures.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Center(child: Text("No lectures today")),
+            )
+          else
+            ...lectures.map((l) => _lectureRow(
+                  subject: l['subject'] ?? 'Unknown',
+                  faculty: l['faculty'] ?? 'Unknown',
+                  time: l['time'] ?? 'TBD',
+                  mode: l['mode'] ?? 'Physical',
+                )).toList(),
         ],
       ),
     );
@@ -162,45 +229,38 @@ class StudentDashboardTab extends StatelessWidget {
           const SizedBox(width: 12),
           Chip(
             label: Text(mode),
-            backgroundColor: const Color(0xFF97A5C9).withOpacity(0.15),
+            backgroundColor: ApplicationColors.primaryPurple.withOpacity(0.15),
           ),
         ],
       ),
     );
   }
 
-  // 🚨 Academic Notices
-  Widget _academicNotices() {
+  Widget _academicNotices(List<dynamic> notices) {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            "Academic Notices",
+            "Notices",
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-
-          _notice(
-            title: "Final Exam Schedule Out",
-            subtitle: "Check the exam timetable.",
-            icon: Icons.warning_amber,
-          ),
-          _notice(
-            title: "New Study Material Added",
-            subtitle: "Chapter 5 notes uploaded.",
-            icon: Icons.book,
-          ),
-          _notice(
-            title: "Holiday Notice",
-            subtitle: "College closed on Friday.",
-            icon: Icons.event,
-          ),
-
+          if (notices.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Center(child: Text("No notices")),
+            )
+          else
+            ...notices.take(3).map((n) => _notice(
+                  title: n['title'] ?? 'Notice',
+                  subtitle: n['content'] ?? '',
+                  icon: Icons.notifications_active,
+                )).toList(),
           const SizedBox(height: 12),
           TextButton(
             onPressed: () {},
-            child: const Text("See All Announcements"),
+            child: const Text("See All"),
           ),
         ],
       ),
@@ -216,7 +276,7 @@ class StudentDashboardTab extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Icon(icon, color: const Color(0xFF97A5C9)),
+          Icon(icon, color: ApplicationColors.primaryPurple),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -235,7 +295,6 @@ class StudentDashboardTab extends StatelessWidget {
     );
   }
 
-  // 🧱 Shared UI helpers
   Widget _card({required Widget child}) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -258,7 +317,7 @@ class StudentDashboardTab extends StatelessWidget {
           title,
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        Text(action, style: const TextStyle(color: Color(0xFF97A5C9))),
+        Text(action, style: TextStyle(color: ApplicationColors.primaryPurple)),
       ],
     );
   }
@@ -292,7 +351,7 @@ class _StatCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: const Color(0xFF97A5C9)),
+            Icon(icon, color: ApplicationColors.primaryPurple),
             const SizedBox(height: 12),
             Text(title, style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 6),

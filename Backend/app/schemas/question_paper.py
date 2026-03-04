@@ -18,3 +18,4 @@ class QuestionPaperOut(QuestionPaperBase):
     submission_date: datetime
     reviewed_by: Optional[str] = None
     review_date: Optional[datetime] = None
+    subject_name: str = ""  

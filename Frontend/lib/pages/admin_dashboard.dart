@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/pages/subject_management.dart';
+import 'package:frontend/pages/lecture_schedule.dart';
 import '../theme_colors.dart';
 import '../providers/auth_provider.dart';
 
@@ -51,54 +52,71 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_error != null) {
-      return Center(child: Text('Error: $_error'));
-    }
+  final auth = context.watch<AuthProvider>(); 
+  if (_loading) {
+    return const Center(child: CircularProgressIndicator());
+  }
+  if (_error != null) {
+    return Center(child: Text('Error: $_error'));
+  }
 
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _topSearchBar(),
-            const SizedBox(height: 24),
-            const Text(
-              "Institutional Overview",
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: ApplicationColors.ivoryWhite,
-              ),
+  return Padding(
+    padding: const EdgeInsets.all(24),
+    child: SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _topSearchBar(),
+          const SizedBox(height: 8),
+          Text( 
+            "Welcome, ${auth.name ?? 'Admin'}",
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            "Institutional Overview",
+            style: TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
+              color: ApplicationColors.ivoryWhite,
             ),
+          ),
             const SizedBox(height: 24),
             _statsRow(),
             const SizedBox(height: 32),
             _recentSubmissionsTable(),
             const SizedBox(height: 20),
             Center(
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const SubjectManagementPage(),
-                    ),
-                  );
-                },
-                child: const Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Text(
-                    "Assign Subjects",
-                    style: TextStyle(
-                      fontSize: 20,
-                      color: ApplicationColors.primaryBlue,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SubjectManagementPage(),
+                        ),
+                      );
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Text("Assign Subjects"),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const LectureSchedulePage(),
+                        ),
+                      );
+                    },
+                    child: const Text("Schedule Lectures"),
+                  ),
+                ],
               ),
             ),
           ],
@@ -113,7 +131,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
         hintText: "Search for subjects, faculty or departments...",
         prefixIcon: const Icon(Icons.search),
         filled: true,
-        fillColor: ApplicationColors.primaryBlue,
+        fillColor: ApplicationColors.primaryPurple,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -153,41 +171,41 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
   }
 
   Widget _recentSubmissionsTable() {
-  return Center(
-    child: Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: ApplicationColors.primaryBlue,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: DataTable(
-        headingTextStyle: const TextStyle(
-          color: ApplicationColors.ivoryWhite,
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: ApplicationColors.primaryPurple,
+          borderRadius: BorderRadius.circular(16),
         ),
-        columns: const [
-          DataColumn(label: Text("Subject")),
-          DataColumn(label: Text("Faculty")),
-          DataColumn(label: Text("Date")),
-          DataColumn(label: Text("Status")),
-        ],
-        rows: _submissions?.map((paper) {
-              final date = DateTime.parse(paper['date']);
-              return DataRow(
-                cells: [
-                  DataCell(Text(paper['subject_name'] ?? 'Unknown')), // <-- changed
-                  DataCell(Text(paper['faculty_name'] ?? 'Unknown')), // <-- changed
-                  DataCell(
-                    Text("${date.day}/${date.month}/${date.year}"),
-                  ),
-                  DataCell(_statusText(paper['status'])),
-                ],
-              );
-            }).toList() ??
-            [],
+        child: DataTable(
+          headingTextStyle: const TextStyle(
+            color: ApplicationColors.ivoryWhite,
+          ),
+          columns: const [
+            DataColumn(label: Text("Subject")),
+            DataColumn(label: Text("Faculty")),
+            DataColumn(label: Text("Date")),
+            DataColumn(label: Text("Status")),
+          ],
+          rows: _submissions?.map((paper) {
+                final date = DateTime.parse(paper['date']);
+                return DataRow(
+                  cells: [
+                    DataCell(Text(paper['subject_name'] ?? 'Unknown')),
+                    DataCell(Text(paper['faculty_name'] ?? 'Unknown')),
+                    DataCell(
+                      Text("${date.day}/${date.month}/${date.year}"),
+                    ),
+                    DataCell(_statusText(paper['status'])),
+                  ],
+                );
+              }).toList() ??
+              [],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _statusText(String? status) {
     switch (status) {
@@ -216,7 +234,7 @@ class _StatCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: ApplicationColors.primaryBlue,
+          color: ApplicationColors.primaryPurple,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(

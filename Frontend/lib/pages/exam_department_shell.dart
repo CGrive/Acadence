@@ -28,7 +28,7 @@ class _ExamDepartmentShellState extends State<ExamDepartmentShell> {
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        selectedItemColor: ApplicationColors.primaryBlue,
+        selectedItemColor: ApplicationColors.primaryPurple,
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         onTap: (index) => setState(() => _currentIndex = index),

@@ -1,9 +1,55 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+import '../theme_colors.dart';
 
-class LectureMonitoringPage extends StatelessWidget {
-  const LectureMonitoringPage({super.key});
+class LectureMonitoringPage extends StatefulWidget {
+  final List<dynamic> lectures;
+  const LectureMonitoringPage({super.key, required this.lectures});
 
-  static const Color primaryAccent = Color(0xFF97A5C9);
+  @override
+  State<LectureMonitoringPage> createState() => _LectureMonitoringPageState();
+}
+
+class _LectureMonitoringPageState extends State<LectureMonitoringPage> {
+  List<dynamic> _lectures = [];
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _lectures = widget.lectures;
+  }
+
+  Future<void> _markConducted(String lectureId) async {
+    setState(() => _loading = true);
+    final api = context.read<AuthProvider>().apiService;
+    try {
+      final response = await api.post('/faculty/lectures/$lectureId/conduct', {});
+      if (response.statusCode == 200) {
+        final updated = await api.get('/faculty/lectures/today');
+        if (updated.statusCode == 200) {
+          setState(() {
+            _lectures = jsonDecode(updated.body);
+          });
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Lecture marked as conducted')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed: ${response.body}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,203 +66,79 @@ class LectureMonitoringPage extends StatelessWidget {
           "Lecture Monitoring",
           style: TextStyle(color: Colors.black),
         ),
-        actions: const [
-          CircleAvatar(backgroundColor: Color(0xFFF1D6A8), child: Text("A")),
-          SizedBox(width: 12),
-        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Today's Lectures",
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  if (_lectures.isEmpty)
+                    const Center(child: Text("No lectures scheduled today."))
+                  else
+                    ..._lectures.map((lec) => _lectureCard(lec)).toList(),
+                ],
+              ),
+            ),
+    );
+  }
+
+  Widget _lectureCard(Map<String, dynamic> lecture) {
+    final conducted = lecture['conducted'] ?? false;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Daily Log",
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Subject: ${lecture['subject_name'] ?? lecture['subject_id'] ?? 'Unknown'}",
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text("Time: ${lecture['start_time']} - ${lecture['end_time']}"),
+                      Text("Room: ${lecture['room'] ?? 'N/A'}"),
+                    ],
+                  ),
+                ),
+                if (!conducted)
+                  ElevatedButton(
+                    onPressed: () => _markConducted(lecture['id']),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                    ),
+                    child: const Text("Mark Conducted"),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      "Conducted",
+                      style: TextStyle(color: Colors.green),
+                    ),
+                  ),
+              ],
             ),
-            const SizedBox(height: 6),
-            const Text(
-              "Please confirm the lectures you have successfully conducted today to update the academic record.",
-              style: TextStyle(color: Colors.grey),
-            ),
-
-            const SizedBox(height: 24),
-            _markLectureConductedCard(),
-            const SizedBox(height: 28),
-            _conductedLecturesHistory(),
           ],
         ),
-      ),
-    );
-  }
-
-  // ───────────── Mark Lecture Conducted ─────────────
-  Widget _markLectureConductedCard() {
-    return _card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Mark Lecture Conducted",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-
-          const Text("SUBJECT", style: TextStyle(color: Colors.grey)),
-          const SizedBox(height: 6),
-          DropdownButtonFormField(
-            decoration: _inputDecoration("Select Subject"),
-            items: const [],
-            onChanged: (_) {},
-          ),
-
-          const SizedBox(height: 16),
-          const Text("DATE", style: TextStyle(color: Colors.grey)),
-          const SizedBox(height: 6),
-          TextField(
-            readOnly: true,
-            decoration: _inputDecoration(
-              "10/25/2023",
-            ).copyWith(suffixIcon: const Icon(Icons.calendar_today)),
-          ),
-
-          const SizedBox(height: 20),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryAccent,
-              minimumSize: const Size.fromHeight(52),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-            onPressed: () {},
-            icon: const Icon(Icons.check_circle_outline),
-            label: const Text("Mark as Conducted"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ───────────── History ─────────────
-  Widget _conductedLecturesHistory() {
-    return _card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
-                "Conducted Lectures History",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              Icon(Icons.history, color: Colors.grey),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          _historyRow(
-            date: "Oct 24, 2023",
-            time: "09:00 – 10:30 AM",
-            subject: "Adv. Algorithms",
-            room: "Room 402B",
-          ),
-          _historyRow(
-            date: "Oct 23, 2023",
-            time: "11:00 – 12:30 PM",
-            subject: "Operating Sys.",
-            room: "Room 105",
-          ),
-          _historyRow(
-            date: "Oct 23, 2023",
-            time: "02:00 – 03:30 PM",
-            subject: "Database Mgmt.",
-            room: "Lab 3",
-          ),
-
-          const SizedBox(height: 16),
-          Center(
-            child: TextButton(
-              onPressed: () {},
-              child: const Text("View All Records"),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _historyRow({
-    required String date,
-    required String time,
-    required String subject,
-    required String room,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(date, style: const TextStyle(fontWeight: FontWeight.w600)),
-                Text(time, style: const TextStyle(color: Colors.grey)),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  subject,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                Text(room, style: const TextStyle(color: Colors.grey)),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text(
-              "Conducted",
-              style: TextStyle(color: Colors.green),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ───────────── Helpers ─────────────
-  Widget _card({required Widget child}) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 12),
-        ],
-      ),
-      child: child,
-    );
-  }
-
-  InputDecoration _inputDecoration(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: const Color(0xFFF4F6FA),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
       ),
     );
   }

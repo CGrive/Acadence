@@ -62,7 +62,7 @@ class NavigationRailDrawer extends StatelessWidget {
         groupAlignment: 0,
         selectedIconTheme: IconThemeData(color: ApplicationColors.ivoryWhite),
         unselectedIconTheme: IconThemeData(color: ApplicationColors.adminSlate),
-        indicatorColor: ApplicationColors.primaryBlue,
+        indicatorColor: ApplicationColors.primaryPurple,
         labelType: isExpanded
             ? NavigationRailLabelType.none
             : NavigationRailLabelType.selected,
@@ -70,7 +70,7 @@ class NavigationRailDrawer extends StatelessWidget {
         leading: FloatingActionButton(
           mini: true,
           elevation: 1,
-          backgroundColor: ApplicationColors.primaryBlue,
+          backgroundColor: ApplicationColors.primaryPurple,
           onPressed: onToggle,
           child: Icon(isExpanded ? Icons.chevron_left : Icons.menu),
         ),

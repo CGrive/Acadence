@@ -38,7 +38,9 @@ dependencies:
   flutter_login: ^6.0.0
   file_picker: ^5.2.3
   provider: ^6.1.1
-  http: ^1.1.0
+  http: ^1.1.0  
+  intl: ^0.19.0
+  url_launcher: ^6.2.4
   
 dev_dependencies:
   flutter_test:

@@ -273,7 +273,7 @@ class _SubjectManagementPageState extends State<SubjectManagementPage> {
               children: const [
                 Icon(
                   Icons.add_circle_outline,
-                  color: ApplicationColors.primaryBlue,
+                  color: ApplicationColors.primaryPurple,
                 ),
                 SizedBox(width: 8),
                 Text(
@@ -344,7 +344,7 @@ class _SubjectManagementPageState extends State<SubjectManagementPage> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: ApplicationColors.primaryBlue,
+                  backgroundColor: ApplicationColors.primaryPurple,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -354,7 +354,7 @@ class _SubjectManagementPageState extends State<SubjectManagementPage> {
                 icon: const Icon(Icons.assignment_ind_outlined),
                 label: const Text(
                   "Add & Assign",
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                  style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
                 ),
               ),
             ),
@@ -480,7 +480,6 @@ class _SubjectManagementPageState extends State<SubjectManagementPage> {
     );
   }
 
-  // ───────────────── Helpers ─────────────────
   Widget _card({required Widget child}) {
     return Container(
       padding: const EdgeInsets.all(20),

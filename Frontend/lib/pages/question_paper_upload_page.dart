@@ -1,15 +1,14 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // kIsWeb
-// ignore: avoid_web_libraries_in_flutter
+import 'dart:typed_data';
 import 'dart:html' as html;
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
-
 import '../theme_colors.dart';
 import '../providers/auth_provider.dart';
-import '../services/api_service.dart'; // needed for baseUrl
+import '../services/api_service.dart';
 
 class QuestionPaperUploadPage extends StatefulWidget {
   const QuestionPaperUploadPage({super.key});
@@ -42,7 +41,7 @@ class _QuestionPaperUploadPageState extends State<QuestionPaperUploadPage> {
   Future<void> _fetchSubjects() async {
     final api = context.read<AuthProvider>().apiService;
     try {
-      final response = await api.get('/admin/subjects');
+      final response = await api.get('/faculty/subjects');
       if (response.statusCode == 200) {
         setState(() {
           _subjects = jsonDecode(response.body);
@@ -85,30 +84,34 @@ class _QuestionPaperUploadPageState extends State<QuestionPaperUploadPage> {
 
   Future<void> _pickFile() async {
     if (kIsWeb) {
-      final input = html.FileUploadInputElement()..accept = '.pdf,.doc,.docx';
-      input.click();
-      input.onChange.listen((_) {
-        final file = input.files?.first;
-        if (file != null) {
-          setState(() {
-            _selectedFile = PlatformFile(
-              name: file.name ?? 'file',
-              size: file.size ?? 0,
-              bytes: null,
-            );
+      final uploadInput = html.FileUploadInputElement();
+      uploadInput.accept = '.pdf,.doc,.docx';
+      uploadInput.click();
+      uploadInput.onChange.listen((e) {
+        final files = uploadInput.files;
+        if (files != null && files.isNotEmpty) {
+          final file = files[0];
+          final reader = html.FileReader();
+          reader.readAsArrayBuffer(file);
+          reader.onLoadEnd.listen((e) {
+            setState(() {
+              _selectedFile = PlatformFile(
+                name: file.name,
+                size: file.size,
+                bytes: reader.result as Uint8List?,
+              );
+            });
           });
         }
       });
-      return;
-    }
-
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'doc', 'docx'],
-    );
-
-    if (result != null && result.files.isNotEmpty) {
-      setState(() => _selectedFile = result.files.first);
+    } else {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx'],
+      );
+      if (result != null && result.files.isNotEmpty) {
+        setState(() => _selectedFile = result.files.first);
+      }
     }
   }
 
@@ -130,11 +133,18 @@ class _QuestionPaperUploadPageState extends State<QuestionPaperUploadPage> {
     request.fields['exam_type'] = _selectedExamType!;
 
     if (kIsWeb) {
-      // For web, we need to read bytes. For simplicity, we'll show a message.
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Web upload not fully implemented")),
-      );
-      return;
+      if (_selectedFile!.bytes != null) {
+        request.files.add(http.MultipartFile.fromBytes(
+          'file',
+          _selectedFile!.bytes!,
+          filename: _selectedFile!.name,
+        ));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("File data missing")),
+        );
+        return;
+      }
     } else {
       request.files.add(await http.MultipartFile.fromPath(
         'file',
@@ -256,7 +266,7 @@ class _QuestionPaperUploadPageState extends State<QuestionPaperUploadPage> {
             width: double.infinity,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: ApplicationColors.primaryBlue,
+                backgroundColor: ApplicationColors.primaryPurple,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -283,7 +293,7 @@ class _QuestionPaperUploadPageState extends State<QuestionPaperUploadPage> {
           border: Border.all(
             color: _selectedFile == null
                 ? Colors.grey.shade300
-                : ApplicationColors.primaryBlue,
+                : ApplicationColors.primaryPurple,
           ),
         ),
         child: Center(
@@ -297,7 +307,7 @@ class _QuestionPaperUploadPageState extends State<QuestionPaperUploadPage> {
                 size: 40,
                 color: _selectedFile == null
                     ? Colors.grey
-                    : ApplicationColors.primaryBlue,
+                    : ApplicationColors.primaryPurple,
               ),
               const SizedBox(height: 8),
               Text(

@@ -14,7 +14,7 @@ class TabHomePage extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           centerTitle: true,
-          backgroundColor: ApplicationColors.primaryBlue,
+          backgroundColor: ApplicationColors.primaryPurple,
           title: Text(
             "Acadence - Home",
             style: GoogleFonts.poppins(

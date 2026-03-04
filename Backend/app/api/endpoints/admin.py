@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from bson import ObjectId, errors # <-- IMPORT ADDED
+from bson import ObjectId, errors 
 from ...core.database import db
 from ...models.subject import Subject
 from ...schemas.subject import SubjectCreate, SubjectOut
@@ -106,3 +106,35 @@ async def update_subject(subject_id: str, subject: SubjectCreate, current_user=D
     updated = await db.db["subjects"].find_one({"_id": obj_id})
     updated["id"] = str(updated.pop("_id"))
     return updated
+
+from ...models.lecture import Lecture
+from ...schemas.lecture import LectureCreate, LectureOut
+
+@router.post("/lectures", response_model=LectureOut)
+async def create_lecture(lecture: LectureCreate, current_user=Depends(admin_required)):
+    lecture_dict = lecture.dict()
+    # No conversion needed – the frontend already sends strings
+    result = await db.db["lectures"].insert_one(lecture_dict)
+    created = await db.db["lectures"].find_one({"_id": result.inserted_id})
+    created["id"] = str(created.pop("_id"))
+    return created
+
+from ...models.lecture import Lecture
+from ...schemas.lecture import LectureCreate, LectureOut
+
+@router.post("/lectures", response_model=LectureOut)
+async def create_lecture(lecture: LectureCreate, current_user=Depends(admin_required)):
+    lecture_dict = lecture.dict()
+    result = await db.db["lectures"].insert_one(lecture_dict)
+    created = await db.db["lectures"].find_one({"_id": result.inserted_id})
+    created["id"] = str(created.pop("_id"))
+    return created
+
+@router.get("/lectures", response_model=list[LectureOut])
+async def list_lectures(current_user=Depends(admin_required)):
+    cursor = db.db["lectures"].find().sort("date", -1)
+    lectures = []
+    async for doc in cursor:
+        doc["id"] = str(doc.pop("_id"))
+        lectures.append(doc)
+    return lectures

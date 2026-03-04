@@ -23,7 +23,7 @@ class Tab1 extends StatelessWidget {
             padding: const EdgeInsets.only(top: 16.0),
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: ApplicationColors.primaryBlue,
+                backgroundColor: ApplicationColors.primaryPurple,
               ),
               onPressed: () {
                 Navigator.push(
