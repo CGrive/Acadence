@@ -1,14 +1,63 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:frontend/pages/subject_management.dart';
 import '../theme_colors.dart';
-import 'package:frontend/state/app_state.dart';
-import 'package:frontend/models/enums.dart';
+import '../providers/auth_provider.dart';
 
-class AdminDashboardTab extends StatelessWidget {
+class AdminDashboardTab extends StatefulWidget {
   const AdminDashboardTab({super.key});
 
   @override
+  State<AdminDashboardTab> createState() => _AdminDashboardTabState();
+}
+
+class _AdminDashboardTabState extends State<AdminDashboardTab> {
+  Map<String, dynamic>? _stats;
+  List<dynamic>? _submissions;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    final api = context.read<AuthProvider>().apiService;
+    try {
+      final statsResp = await api.get('/admin/stats');
+      final subsResp = await api.get('/admin/recent-submissions?limit=5');
+      if (statsResp.statusCode == 200 && subsResp.statusCode == 200) {
+        setState(() {
+          _stats = jsonDecode(statsResp.body);
+          _submissions = jsonDecode(subsResp.body);
+          _loading = false;
+        });
+      } else {
+        setState(() {
+          _error = 'Failed to load data';
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return Center(child: Text('Error: $_error'));
+    }
+
     return Padding(
       padding: const EdgeInsets.all(24),
       child: SingleChildScrollView(
@@ -17,7 +66,6 @@ class AdminDashboardTab extends StatelessWidget {
           children: [
             _topSearchBar(),
             const SizedBox(height: 24),
-
             const Text(
               "Institutional Overview",
               style: TextStyle(
@@ -26,13 +74,10 @@ class AdminDashboardTab extends StatelessWidget {
                 color: ApplicationColors.ivoryWhite,
               ),
             ),
-
             const SizedBox(height: 24),
             _statsRow(),
-
             const SizedBox(height: 32),
             _recentSubmissionsTable(),
-
             const SizedBox(height: 20),
             Center(
               child: ElevatedButton(
@@ -62,7 +107,6 @@ class AdminDashboardTab extends StatelessWidget {
     );
   }
 
-  // ───────────────── Search Bar ─────────────────
   Widget _topSearchBar() {
     return TextField(
       decoration: InputDecoration(
@@ -78,77 +122,80 @@ class AdminDashboardTab extends StatelessWidget {
     );
   }
 
-  // ───────────────── Stats Row (CONNECTED) ─────────────────
   Widget _statsRow() {
-    final approvedCount = AppState.papers
-        .where((p) => p.status == PaperStatus.approved)
-        .length;
-
-    final totalPapers = AppState.papers.length;
-
     return Row(
       children: [
-        const _StatCard("Total Departments", "12", Icons.apartment),
+        _StatCard(
+          "Total Departments",
+          _stats?['total_departments']?.toString() ?? '0',
+          Icons.apartment,
+        ),
         const SizedBox(width: 16),
-        const _StatCard("Active Subjects", "450", Icons.book),
+        _StatCard(
+          "Active Subjects",
+          _stats?['active_subjects']?.toString() ?? '0',
+          Icons.book,
+        ),
         const SizedBox(width: 16),
-        const _StatCard("Daily Lectures", "85", Icons.school),
+        _StatCard(
+          "Daily Lectures",
+          _stats?['daily_lectures']?.toString() ?? '0',
+          Icons.school,
+        ),
         const SizedBox(width: 16),
         _StatCard(
           "Question Papers",
-          "$approvedCount / $totalPapers",
+          "${_stats?['approved_papers'] ?? 0} / ${_stats?['total_papers'] ?? 0}",
           Icons.description,
         ),
       ],
     );
   }
 
-  // ───────────────── Recent Submissions Table (CONNECTED) ─────────────────
   Widget _recentSubmissionsTable() {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: ApplicationColors.primaryBlue,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: DataTable(
-          headingTextStyle: const TextStyle(
-            color: ApplicationColors.ivoryWhite,
-          ),
-          columns: const [
-            DataColumn(label: Text("Subject")),
-            DataColumn(label: Text("Faculty")),
-            DataColumn(label: Text("Date")),
-            DataColumn(label: Text("Status")),
-          ],
-          rows: AppState.papers.map((paper) {
-            return DataRow(
-              cells: [
-                DataCell(Text(paper.subject)),
-                DataCell(Text(paper.faculty)),
-                DataCell(
-                  Text(
-                    "${paper.date.day}/${paper.date.month}/${paper.date.year}",
-                  ),
-                ),
-                DataCell(_statusText(paper.status)),
-              ],
-            );
-          }).toList(),
-        ),
+  return Center(
+    child: Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: ApplicationColors.primaryBlue,
+        borderRadius: BorderRadius.circular(16),
       ),
-    );
-  }
+      child: DataTable(
+        headingTextStyle: const TextStyle(
+          color: ApplicationColors.ivoryWhite,
+        ),
+        columns: const [
+          DataColumn(label: Text("Subject")),
+          DataColumn(label: Text("Faculty")),
+          DataColumn(label: Text("Date")),
+          DataColumn(label: Text("Status")),
+        ],
+        rows: _submissions?.map((paper) {
+              final date = DateTime.parse(paper['date']);
+              return DataRow(
+                cells: [
+                  DataCell(Text(paper['subject_name'] ?? 'Unknown')), // <-- changed
+                  DataCell(Text(paper['faculty_name'] ?? 'Unknown')), // <-- changed
+                  DataCell(
+                    Text("${date.day}/${date.month}/${date.year}"),
+                  ),
+                  DataCell(_statusText(paper['status'])),
+                ],
+              );
+            }).toList() ??
+            [],
+      ),
+    ),
+  );
+}
 
-  // ───────────────── Status Text Helper ─────────────────
-  Widget _statusText(PaperStatus status) {
+  Widget _statusText(String? status) {
     switch (status) {
-      case PaperStatus.approved:
+      case 'approved':
         return const Text("APPROVED", style: TextStyle(color: Colors.green));
-      case PaperStatus.pending:
+      case 'pending':
         return const Text("PENDING", style: TextStyle(color: Colors.orange));
-      case PaperStatus.rejected:
+      case 'rejected':
         return const Text("REJECTED", style: TextStyle(color: Colors.red));
       default:
         return const Text("DRAFT", style: TextStyle(color: Colors.grey));
@@ -156,7 +203,6 @@ class AdminDashboardTab extends StatelessWidget {
   }
 }
 
-// ───────────────── Stat Card (UNCHANGED UI) ─────────────────
 class _StatCard extends StatelessWidget {
   final String title;
   final String value;

@@ -1,11 +1,66 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../theme_colors.dart';
+import '../providers/auth_provider.dart';
 
-class ExamDepartmentDashboard extends StatelessWidget {
+class ExamDepartmentDashboard extends StatefulWidget {
   const ExamDepartmentDashboard({super.key});
 
   @override
+  State<ExamDepartmentDashboard> createState() => _ExamDepartmentDashboardState();
+}
+
+class _ExamDepartmentDashboardState extends State<ExamDepartmentDashboard> {
+  List<dynamic> _pendingPapers = [];
+  List<dynamic> _invigilation = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    final api = context.read<AuthProvider>().apiService;
+    try {
+      final pendingResp = await api.get('/exam/pending-papers');
+      final invigResp = await api.get('/exam/invigilation');
+      if (pendingResp.statusCode == 200 && invigResp.statusCode == 200) {
+        setState(() {
+          _pendingPapers = jsonDecode(pendingResp.body);
+          _invigilation = jsonDecode(invigResp.body);
+          _loading = false;
+        });
+      } else {
+        setState(() {
+          _error = 'Failed to load data';
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_error != null) {
+      return Scaffold(
+        body: Center(child: Text('Error: $_error')),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC),
       appBar: AppBar(
@@ -28,13 +83,10 @@ class ExamDepartmentDashboard extends StatelessWidget {
             const SizedBox(height: 6),
             const Text("Semester Finals · Operational Summary",
                 style: TextStyle(color: Colors.grey)),
-
             const SizedBox(height: 20),
             _kpiRow(),
-
             const SizedBox(height: 28),
             _urgentFacultyNotifications(),
-
             const SizedBox(height: 28),
             _invigilationOverview(),
           ],
@@ -44,15 +96,18 @@ class ExamDepartmentDashboard extends StatelessWidget {
   }
 
   Widget _kpiRow() {
+    final pendingCount = _pendingPapers.length;
+    final invigilationGaps = _invigilation.where((i) => i['status'] == 'unassigned').length;
+    final totalPapers = _pendingPapers.length; // placeholder
     return Row(
-      children: const [
-        _MiniKpiCard("Pending Approvals", "12", Colors.orange),
-        SizedBox(width: 12),
-        _MiniKpiCard("Invigilation Gaps", "03", Colors.red),
-        SizedBox(width: 12),
-        _MiniKpiCard("Papers Uploaded", "08", Colors.green),
-        SizedBox(width: 12),
-        _MiniKpiCard("Active Exams", "25", Colors.blue),
+      children: [
+        _MiniKpiCard("Pending Approvals", pendingCount.toString(), Colors.orange),
+        const SizedBox(width: 12),
+        _MiniKpiCard("Invigilation Gaps", invigilationGaps.toString(), Colors.red),
+        const SizedBox(width: 12),
+        _MiniKpiCard("Papers Uploaded", totalPapers.toString(), Colors.green),
+        const SizedBox(width: 12),
+        _MiniKpiCard("Active Exams", "25", Colors.blue), // static for now
       ],
     );
   }
@@ -77,13 +132,16 @@ class ExamDepartmentDashboard extends StatelessWidget {
     return _card(
       Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text("Invigilation Overview",
+        children: [
+          const Text("Invigilation Overview",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          SizedBox(height: 16),
-          _InvigilationRow("Calculus II", "10:00 AM", "Room 302", true),
-          _InvigilationRow("Data Structures", "01:00 PM", "Main Lab", false),
-          _InvigilationRow("Networking", "03:00 PM", "Room 405", true),
+          const SizedBox(height: 16),
+          ..._invigilation.map((i) => _InvigilationRow(
+                i['subject'] ?? 'Unknown',
+                i['start_time']?.toString() ?? '00:00',
+                i['room'] ?? 'Room?',
+                i['status'] == 'assigned',
+              )).toList(),
         ],
       ),
     );
@@ -104,7 +162,7 @@ class ExamDepartmentDashboard extends StatelessWidget {
   }
 }
 
-// ───── Sub-widgets ─────
+// Helper widgets – top-level
 
 class _MiniKpiCard extends StatelessWidget {
   final String title;
@@ -126,8 +184,7 @@ class _MiniKpiCard extends StatelessWidget {
         child: Column(
           children: [
             Text(value,
-                style:
-                    TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
             const SizedBox(height: 4),
             Text(title,
                 textAlign: TextAlign.center,
@@ -140,7 +197,9 @@ class _MiniKpiCard extends StatelessWidget {
 }
 
 class _FacultyRow extends StatelessWidget {
-  final String name, subject, remaining;
+  final String name;
+  final String subject;
+  final String remaining;
   final bool urgent;
 
   const _FacultyRow(this.name, this.subject, this.remaining, this.urgent);
@@ -171,14 +230,12 @@ class _FacultyRow extends StatelessWidget {
             children: [
               Text(remaining,
                   style: TextStyle(
-                      fontSize: 12,
-                      color: urgent ? Colors.red : Colors.orange)),
+                      fontSize: 12, color: urgent ? Colors.red : Colors.orange)),
               const SizedBox(height: 6),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: ApplicationColors.primaryBlue,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 ),
                 onPressed: () {},
                 child: const Text("Send Reminder"),
@@ -192,7 +249,9 @@ class _FacultyRow extends StatelessWidget {
 }
 
 class _InvigilationRow extends StatelessWidget {
-  final String subject, time, room;
+  final String subject;
+  final String time;
+  final String room;
   final bool assigned;
 
   const _InvigilationRow(this.subject, this.time, this.room, this.assigned);
@@ -223,8 +282,7 @@ class _InvigilationRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(assigned ? "Assigned" : "Allocate",
-                style:
-                    TextStyle(color: assigned ? Colors.green : Colors.orange)),
+                style: TextStyle(color: assigned ? Colors.green : Colors.orange)),
           ),
         ],
       ),

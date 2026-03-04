@@ -17,14 +17,11 @@ class ExamNoticesPage extends StatelessWidget {
             const Text("Send Exam Notice",
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-
             _noticeForm(),
-
             const SizedBox(height: 32),
             const Text("Notice History",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-
             _noticeHistory(
               "Question Paper Upload Deadline",
               "Sent to all faculty · 2h ago",

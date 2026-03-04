@@ -8,11 +8,17 @@ import 'package:frontend/pages/faculty_dashboard.dart';
 import 'package:frontend/pages/exam_department_shell.dart';
 import 'package:provider/provider.dart';
 import 'state/app_state.dart';
-import 'app.dart';
+import 'providers/auth_provider.dart';
 
 void main() {
   runApp(
-    ChangeNotifierProvider(create: (_) => AppState(), child: const MyApp()),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AppState()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+      ],
+      child: const MyApp(),
+    ),
   );
 }
 
